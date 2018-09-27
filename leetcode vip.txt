@@ -1,0 +1,595 @@
+﻿1.Maximum Subtree (DFS)
+Given a binary tree, find the subtree with maximum sum. Return the root of the subtree.
+
+Example:
+Given a binary tree:
+
+    1
+  /   \
+-5     2
+/ \   /  \
+0   3 -4  -5 
+return the node with value 3.
+class Solution:
+   """
+    @param: root: the root of binary tree
+    @return: the maximum weight node
+    """
+   maxSum = 0
+   maxNode = None
+
+   def findSubtree(self, root):
+       # write your code here
+       self.dfs(root)
+
+       return self.maxNode
+
+   def dfs(self,pos):
+       if pos == None:
+           return 0
+
+       leftVal = self.dfs(pos.left)
+       rightVal = self.dfs(pos.right)
+       total = leftVal + rightVal + pos.val
+       if total >= self.maxSum: 
+           self.maxSum = total
+           self.maxNode = pos
+       return total
+
+In [ ]:
+
+
+
+2.Window Sum (accumulate array)
+Given an array of n integer, and a moving window(size k), move the window at each iteration from the start of the array, find the sum of the element inside the window at each moving.
+
+Example:
+
+For array [1,2,7,8,5], moving window size k = 3. 
+1 + 2 + 7 = 10
+2 + 7 + 8 = 17
+7 + 8 + 5 = 20
+return [10,17,20]
+class Solution:
+   """
+    @param: nums: a list of integers.
+    @param: k: length of window.
+    @return: the sum of the element inside the window at each moving.
+    """
+   def winSum(self, nums, k):
+       # write your code here
+       N = len(nums)
+       if N == 0:
+           return nums
+
+       acc = [0]
+       for i in xrange(N):
+           acc.append(acc[i]+nums[i])
+
+       res = []
+       for i in xrange(k-1,N):
+           res.append(acc[i+1]-acc[i+1-k])
+
+       return res
+
+In [ ]:
+
+
+
+3.Course Schedule II (Toplogical Sort)
+There are a total of n courses you have to take, labeled from 0 to n - 1.
+Some courses may have prerequisites, for example to take course 0 you have to first take course 1, which is expressed as a pair: [0,1]
+
+Given the total number of courses and a list of prerequisite pairs, return the ordering of courses you should take to finish all courses.
+
+There may be multiple correct orders, you just need to return one of them. If it is impossible to finish all courses, return an empty array.
+
+Example:
+
+Given n = 2, prerequisites = [[1,0]]
+Return [0,1]
+
+Given n = 4, prerequisites = [1,0],[2,0],[3,1],[3,2]]
+Return [0,1,2,3] or [0,2,1,3]
+class Solution:
+   """
+    @param: numCourses: a total of n courses
+    @param: prerequisites: a list of prerequisite pairs
+    @return: the course order
+    """
+   def findOrder(self, numCourses, prerequisites):
+       # write your code here
+       # dict comprehension
+       postNeighbor = {i:[] for i in xrange(numCourses)}
+       preDegree = [0]*numCourses
+       from collections import deque
+       queue = deque()
+       res = []
+
+       for i,j in prerequisites:
+           postNeighbor[j].append(i)
+           preDegree[i] += 1
+
+       for i in xrange(numCourses):
+           if preDegree[i] == 0:
+               queue.appendleft(i)
+
+       while queue:
+           node = queue.pop()
+           res.append(node)
+
+           for nextNode in postNeighbor[node]:
+               preDegree[nextNode] -= 1
+               # expand:
+               if preDegree[nextNode] == 0:
+                   queue.appendleft(nextNode)
+
+       # judge false
+       if len(res) == numCourses:
+           return res
+       else:
+           return []
+
+In [ ]:
+
+
+
+4.Copy List with Random Pointer (List Operation)
+A linked list is given such that each node contains an additional random pointer which could point to any node in the list or null.
+
+Return a deep copy of the list.
+# Definition for singly-linked list with a random pointer.
+# class RandomListNode:
+#     def __init__(self, x):
+#         self.label = x
+#         self.next = None
+#         self.random = None
+class Solution:
+   # @param head: A RandomListNode
+   # @return: A RandomListNode
+   def copyRandomList(self, head):
+       # write your code here
+       if head is None:
+           return None
+
+       oldCur = head
+       while oldCur: # clone new node
+           newCur = RandomListNode(oldCur.label)
+           newCur.random = oldCur.random
+           newCur.next = oldCur.next
+
+           tmp = oldCur.next
+           oldCur.next = newCur
+           oldCur = tmp
+
+       newCur = head.next # set random
+       while newCur:
+           if newCur.random:
+               newCur.random = newCur.random.next
+           if newCur.next: # becareful here to break
+               newCur = newCur.next.next
+           else:
+               break
+
+       ans = head.next
+       oldCur = head
+       while oldCur: # recover
+           newCur = oldCur.next
+           oldCur.next = oldCur.next.next
+           if newCur.next:
+               newCur.next = newCur.next.next
+               oldCur = oldCur.next
+           else:
+               break
+
+       return ans
+
+In [ ]:
+
+
+
+5.OA9 MST question (Union-Find-Set, Daddy's length)
+Given a list of Connections, which is the Connection class (the city name at both ends of the edge and a cost between them), find some edges, connect all the cities and spend the least amount.
+Return the connects if can connect all the cities, otherwise return empty list.
+
+Example
+Gievn the connections = ["Acity","Bcity",1], ["Acity","Ccity",2], ["Bcity","Ccity",3]
+
+Return ["Acity","Bcity",1], ["Acity","Ccity",2]
+'''
+Definition for a Connection
+class Connection:
+
+    def __init__(self, city1, city2, cost):
+        self.city1, self.city2, self.cost = city1, city2, cost
+'''
+class Solution:
+   # @param {Connection[]} connections given a list of connections
+   # include two cities and cost
+   # @return {Connection[]} a list of connections from results
+   def lowestCost(self, connections):
+       # Write your code here
+       # MST-KRUSKAL
+       ans = []
+       vertexSet = set()
+
+       # union find set
+       ufsFather = {}
+       ufsLen = {}
+
+       def find(x):
+           father = ufsFather[x]
+           if father not in ufsFather:
+               return father
+           else:
+               ufsFather[x] = find(father) # path compression
+               return ufsFather[x]
+
+       def union(a,b):
+           r1 = find(a)
+           r2 = find(b)
+           l1 = ufsLen[r1]
+           l2 = ufsLen[r2]
+           if l2 > l1: # when do union lager set should close to root, make it flat
+               union(r2,r1)
+           else:
+               ufsFather[r2] = r1
+               ufsLen[r2] = l1 + l2
+           return None
+
+       def init(aSet):
+           n = 0
+           for each in aSet:
+               n = n+1
+               ufsFather[each] = n
+               ufsLen[n] = 1
+           return n # return the total number of the set
+       # end for ufs
+
+       for e in connections:
+           vertexSet.add(e.city1)
+           vertexSet.add(e.city2)
+       nVertex = init(vertexSet)
+
+       orderedEdge = sorted(connections, key=lambda e:(e.cost,e.city1,e.city2))
+
+       for e in orderedEdge:
+           if find(e.city1)!=find(e.city2):
+               ans.append(e)
+               union(e.city1,e.city2)
+
+       if len(ans)==nVertex-1:
+           return ans
+       else:
+           return []
+
+6.Search for a Range (BST Advance)
+Given a sorted array of n integers, find the starting and ending position of a given target value.
+
+If the target is not found in the array, return [-1, -1].
+
+Example
+Given [5, 7, 7, 8, 8, 10] and target value 8,
+return [3, 4].
+class Solution:
+   """
+    @param: A: an integer sorted array
+    @param: target: an integer to be inserted
+    @return: a list of length 2, [index1, index2]
+    """
+   def searchRange(self, A, target):
+       # write your code here
+       if len(A) == 0:
+           return [-1,-1]
+
+       # left bound    
+       lo, hi =  0, len(A)-1
+       while lo + 1 < hi:
+           mid = (lo + hi) / 2
+           if A[mid] < target:
+               lo = mid + 1
+           elif A[mid] > target:
+               hi = mid - 1
+           elif A[mid] == target:
+               hi = mid
+       if A[lo] == target:
+           leftBound = lo
+       elif A[hi] == target:
+           leftBound = hi
+       else:
+           return [-1,-1]
+
+       # right bound
+       lo, hi = leftBound, len(A)-1
+       while lo + 1 < hi:
+           mid = (lo + hi) /2
+           if A[mid] < target:
+               lo = mid + 1
+           elif A[mid] > target:
+               hi = mid - 1
+           elif A[mid] == target:
+               lo = mid
+
+       # 1 !!! becareful about the order        
+       if A[hi] == target:
+           rightBound = hi
+       elif A[lo] == target:
+           rightBound = lo
+       else:
+           return [-1,-1]
+
+       return [leftBound, rightBound]
+
+In [ ]:
+
+
+
+7.Surrounding Regions (BFS advance)
+Given a 2D board containing 'X' and 'O', capture all regions surrounded by 'X'.
+
+A region is captured by flipping all 'O''s into 'X''s in that surrounded region.
+
+Example:
+
+X X X X
+X O O X
+X X O X
+X O X X
+
+After capture all regions surrounded by 'X', the board should be:
+
+X X X X
+X X X X
+X X X X
+X O X X
+class Solution:
+   """
+    @param: board: board a 2D board containing 'X' and 'O'
+    @return: nothing
+    """
+   def surroundedRegions(self, board):
+       # write your code here
+       from collections import deque
+       N = len(board)
+       if N==0:
+           return None
+
+       # 1 !!! no need for visited board, remark 'W'
+       # visited = [[ False for j in xrange(M)] for i in xrange(N)]
+       M = len(board[0])
+
+       # def bfs(node):
+       # 2 !!! no need to def bfs, just put init into Q
+       Q = deque()  # actually not need for deque in this problem
+       for j in xrange(M):
+           Q.appendleft((0,j))
+           Q.appendleft((N-1,j))
+       for i in xrange(N):
+           Q.appendleft((i,0))
+           Q.appendleft((i,M-1))
+
+       while Q:
+           cur = Q.pop()
+           row, col = cur
+           # 3 !!! detect itself here, not its neighbor
+           # the queue and the conditions together made the open list
+           if -1< row < N and -1< col < M and board[row][col] == 'O':
+               board[row][col] = 'W' # also means visited
+               Q.appendleft((row, col+1))
+               Q.appendleft((row+1, col))
+               Q.appendleft((row, col-1))
+               Q.appendleft((row-1, col))
+
+       for i in xrange(N):
+           for j in xrange(M):
+               if board[i][j] == 'O':
+                   board[i][j] = 'X'
+               if board[i][j] == 'W':
+                   board[i][j] = 'O'
+
+In [ ]:
+
+
+
+8.Nearest Exit (BFS advance, Maybe later replace with heap)
+You are given a m x n 2D grid initialized with these three possible values.
+
+-1 - A wall or an obstacle.
+0 - A gate.
+INF - Infinity means an empty room. We use the value 2^31 - 1 = 2147483647 to represent INF as you may assume that the distance to a gate is less than 2147483647.
+Fill each empty room with the distance to its nearest gate. If it is impossible to reach a gate, it should be filled with INF.
+
+Example
+Given the 2D grid:
+
+INF  -1  0  INF
+INF INF INF  -1
+INF  -1 INF  -1
+ 0  -1 INF INF
+return the result:
+
+ 3  -1   0   1
+ 2   2   1  -1
+ 1  -1   2  -1
+ 0  -1   3   4
+class Solution:
+   """
+    @param: rooms: m x n 2D grid
+    @return: nothing
+    """
+   def wallsAndGates(self, rooms):
+       # write your code here
+       M = len(rooms)
+       if M == 0:
+           return
+       N = len(rooms[0])
+
+       inf = 2147483647
+       from collections import deque
+       Q = deque()
+       for i in xrange(M):
+           for j in xrange(N):
+               if rooms[i][j] == 0:
+                   Q.appendleft((i,j))
+
+       while Q:
+           i, j = Q.pop()
+           for x,y in (i,j+1),(i+1,j),(i,j-1),(i-1,j):
+               # 1 !!! M not M-1
+               if -1< x < M and -1 < y < N and rooms[x][y] == inf:
+                   rooms[x][y] = rooms[i][j]+1
+                   Q.appendleft((x,y))
+
+In [ ]:
+
+
+
+9.Word Square (DFS advance + Pruing)
+Given a set of words without duplicates, find all word squares you can build from them.
+
+A sequence of words forms a valid word square if the kth row and column read the exact same string, where 0 ≤ k < max(numRows, numColumns).
+
+For example, the word sequence ["ball","area","lead","lady"] forms a word square because each word reads the same both horizontally and vertically.
+
+b a l l
+a r e a
+l e a d
+l a d y
+
+Example:
+
+Given a set ["area","lead","wall","lady","ball"]
+return [["wall","area","lead","lady"],["ball","area","lead","lady"]]
+Explanation:
+The output consists of two word squares. The order of output does not matter (just the order of words in each word square matters).
+
+Given a set ["abat","baba","atan","atal"]
+return [["baba","abat","baba","atan"],["baba","abat","baba","atal"]]
+Explanation:
+The output consists of two word squares. The order of output does not matter (just the order of words in each word square matters).
+class Solution:
+   """
+    @param: words: a set of words without duplicates
+    @return: all word squares
+    """
+   def wordSquares(self, words):
+       # write your code here
+       ans = []
+       # special case L = 0,1
+       N = len(words)
+       if N == 0:
+           return ans
+       L = len(words[0])
+       if L == 1:
+           for each in words:
+               ans.append([each])
+           return ans
+
+       # cache 2 characters prefix for L >= 2
+       from collections import defaultdict
+       D = defaultdict(list)
+       for each in words:
+           D[each[0]].append(each)
+           D[each[:2]].append(each)
+
+       # check square
+       def checkSquare(path):
+           for i in xrange(2,L):
+               for j in xrange(i+1,L):
+                   if path[i][j] != path[j][i]:
+                       return False
+           return True
+
+       # dfs
+       def dfs(path):
+           level = len(path)
+           if level == L:
+               if checkSquare(path):
+                   ans.append(path)
+                   return
+               else:
+                   return
+
+           if not path:
+               for each in words:
+                   dfs(path+[each]) # 1 !!! + create new list, append return none
+           elif level == 1:
+               c = path[0][1]
+               for each in D[c]:
+                   dfs(path+[each])
+           elif level > 1:
+               c = path[0][level]+path[1][level] # 2 !!! becareful not -2,-1 fixed in row 1,2
+               for each in D[c]:
+                   dfs(path+[each])
+       dfs([])
+       return ans
+
+In [ ]:
+
+
+
+10.Interval Sum (Segmentation Tree)
+Given an integer array (index from 0 to n-1, where n is the size of this array), and an query list. Each query has two integers [start, end]. For each query, calculate the sum number between index start and end in the given array, return the result list.
+
+Example:
+For array [1,2,7,8,5], and queries [(0,4),(1,2),(2,4)], return [23,9,20]
+"""
+Definition of Interval.
+class Interval(object):
+    def __init__(self, start, end):
+        self.start = start
+        self.end = end
+"""
+
+class SegmentTree(object):
+
+   def __init__(self, start, end, sum=0):
+       self.start = start
+       self.end = end
+       self.sum = sum
+       self.left, self.right = None, None 
+
+   @classmethod
+   def build(cls, start, end, a):
+       if start > end:
+           return None
+
+       if start == end:
+           return SegmentTree(start, end, a[start])
+
+       node = SegmentTree(start, end, a[start])
+
+       mid = (start + end) / 2
+       node.left = cls.build(start, mid, a)
+       node.right = cls.build(mid + 1, end, a)
+       node.sum = node.left.sum + node.right.sum
+       return node
+
+   @classmethod
+   def query(self, root, start, end):
+       if root.start > end or root.end < start:
+           return 0
+
+       if start <= root.start and root.end <= end:
+           return root.sum
+
+       return self.query(root.left, start, end) +  \
+              self.query(root.right, start, end)
+
+
+class Solution:    
+   """
+    @param A, queries: Given an integer array and an Interval list
+                       The ith query is [queries[i-1].start, queries[i-1].end]
+    @return: The result list
+    """
+   def intervalSum(self, A, queries):
+       # write your code here
+       root = SegmentTree.build(0, len(A)-1, A)
+       result = []
+       for query in queries:
+           result.append(SegmentTree.query(root, query.start, query.end))
+
+       return result
+
+In [ ]:
